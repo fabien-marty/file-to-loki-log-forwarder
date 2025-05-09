@@ -1,0 +1,10 @@
+[project]
+name = "file-to-loki-log-forwarder"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = ["httpx", "jinja2", "stlog"]
+
+[dependency-groups]
+dev = ["mypy", "pytest", "pyyaml", "ruff", "types-pyyaml"]

@@ -1,0 +1,70 @@
+name: ci
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - v*
+  pull_request:
+
+env:
+  REGISTRY: docker.io
+  IMAGE_NAME: fabienmarty/file-to-loki-log-forwarder
+
+jobs:
+
+  lint_and_test:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@6b9c6063abd6010835644d4c2e1bef4cf5cd0fca # v6
+      - name: Run lint
+        run: |
+          make lint
+        env:
+          FIX: 0
+      - name: Run tests
+        run: |
+          make test
+      - name: Build docker image
+        run: |
+          make docker
+      - name: Check modified files
+        run: |
+          make no-dirty
+      - name: Clean
+        run: |
+          make clean
+      - name: Check modified files (after clean)
+        run: |
+          make no-dirty
+
+  publish:
+    runs-on: ubuntu-24.04
+    needs: lint_and_test
+    if: github.event_name == 'push'
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=tag
+            type=raw,value=latest,enable={{is_default_branch}}
+      - name: Login to Docker Hub Registry
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_LOGIN }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+      - name: Build and push image
+        uses: docker/build-push-action@v5
+        with:
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}

@@ -1,0 +1,98 @@
+data_dir: "{{ DATA_DIR|default("/var/lib/vector") }}"
+
+acknowledgements:
+  enabled: true
+
+api:
+  enabled: true
+  address: "127.0.0.1:8686" # not exposed to the outside world
+
+sources:
+  {% if INCLUDE_VECTOR_LOGS|default("0") == "1" %}
+  vector_internal:
+    type: "internal_logs"
+  {% endif %}
+  file:
+    type: "file"
+    include:
+      {% if INCLUDE_INTERNAL_LOGS|default("0") == "1" %}
+      - "/internal_logs/file-to-loki-log-forwarder.log"
+      - "/internal_logs/file-to-loki-log-forwarder.log.*"
+      {% endif %}
+      {% for FILE in SOURCE_FILE_INCLUDE_PATHS.split(",") -%}
+      - "{{ FILE }}"
+      {% endfor %}
+
+{% if INCLUDE_VECTOR_LOGS|default("0") == "1" %}
+  {% set INPUTS = '["file", "vector_internal"]' %}
+{% else %}
+  {% set INPUTS = '["file"]' %}
+{% endif %}
+{% if CODEC|default("json") == "json" %}
+transforms:
+  transformed:
+    type: remap
+    inputs: {{ INPUTS }}
+    source: |
+      original_message = .message
+      ., err = parse_json(string!(.message))
+      if err != null {
+        {% if IGNORE_NON_JSON_LINES|default("0") == "1" %}
+        abort
+        {% else %}
+        .message = original_message
+        .timestamp = now()
+        {% endif %}
+      } else {
+        {% if USE_JSON_FIELD_AS_TIMESTAMP|default("") != "" %}
+        parsed_timestamp, err = parse_timestamp(.{{USE_JSON_FIELD_AS_TIMESTAMP}}, format: "%+")
+        if err == null {
+          .timestamp = parsed_timestamp
+        } else {
+          .timestamp = now()
+        }
+        {% else %}
+        .timestamp = now()
+        {% endif %}
+      }
+{% set INPUTS = '["transformed"]' %}
+{% endif %}
+
+sinks:
+  {% if SINK_LOKI_ENDPOINT|default("") != "" %}
+  loki:
+    type: "loki"
+    inputs: {{ INPUTS }}
+    endpoint: "{{ SINK_LOKI_ENDPOINT }}"
+    batch:
+      timeout_secs: 2
+    encoding:
+      codec: "{{ CODEC|default("json") }}"
+    labels:
+      {% for LABEL in SINK_LOKI_LABELS.split(",") -%}
+      {% set KEY, VALUE = LABEL.split("=", 1) -%}
+      {{ KEY }}: "{{ VALUE }}"
+      {% endfor %}
+    {% if SINK_LOKI_TENANT_ID|default("") != "" %}
+    tenant_id: "{{ SINK_LOKI_TENANT_ID }}"
+    {% endif %}
+    {% if SINK_LOKI_AUTH_STRATEGY|default("") != "" %}
+    auth:
+      strategy: "{{ SINK_LOKI_AUTH_STRATEGY }}"
+      user: "{{ SINK_LOKI_AUTH_USER }}"
+      password: "{{ SINK_LOKI_AUTH_PASSWORD }}"
+    {% endif %}
+    healthcheck:
+      enabled: true
+    compression: "gzip"
+    out_of_order_action: "accept"
+  {% endif %}
+
+{% if DEBUG|default("0") == "1" %}
+  console:
+    type: "console"
+    inputs: {{ INPUTS }}
+    target: "stdout"
+    encoding:
+      codec: "{{ CODEC|default("json") }}"
+{% endif %}
