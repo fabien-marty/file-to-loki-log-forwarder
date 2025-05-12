@@ -1,0 +1,78 @@
+acknowledgements:
+  enabled: true
+
+data_dir: "{{ DATA_DIR|default("/var/lib/vector") }}"
+
+sources:
+  file:
+    type: "file"
+    include:
+      {% for FILE in SOURCE_FILE_INCLUDE_PATHS.split(",") -%}
+      - "{{ FILE }}"
+      {% endfor %}
+
+transforms:
+  transformed_file:
+    type: remap
+    inputs: ["file"]
+    source: |
+      original_message = .message
+      ., err = parse_json(string!(.message))
+      if err != null {
+        {% if IGNORE_NON_JSON_LINES|default("0") == "1" %}
+        abort
+        {% else %}
+        .message = original_message
+        .timestamp = now()
+        {% endif %}
+      } else {
+        {% if USE_JSON_FIELD_AS_TIMESTAMP|default("") != "" %}
+        parsed_timestamp, err = parse_timestamp(.{{USE_JSON_FIELD_AS_TIMESTAMP}}, format: "%+")
+        if err == null {
+          .timestamp = parsed_timestamp
+        } else {
+          .timestamp = now()
+        }
+        {% else %}
+        .timestamp = now()
+        {% endif %}
+      }
+
+sinks:
+  {% if SINK_LOKI_ENDPOINT|default("") != "" %}
+  loki:
+    type: "loki"
+    inputs: ["transformed_file"]
+    endpoint: "{{ SINK_LOKI_ENDPOINT }}"
+    batch:
+      timeout_secs: 5
+    encoding:
+      codec: "json"
+    labels:
+      {% for LABEL in SINK_LOKI_LABELS.split(",") -%}
+      {% set KEY, VALUE = LABEL.split("=", 1) -%}
+      {{ KEY }}: "{{ VALUE }}"
+      {% endfor %}
+    {% if SINK_LOKI_TENANT_ID|default("") != "" %}
+    tenant_id: "{{ SINK_LOKI_TENANT_ID }}"
+    {% endif %}
+    {% if SINK_LOKI_AUTH_STRATEGY|default("") != "" %}
+    auth:
+      strategy: "{{ SINK_LOKI_AUTH_STRATEGY }}"
+      user: "{{ SINK_LOKI_AUTH_USER }}"
+      password: "{{ SINK_LOKI_AUTH_PASSWORD }}"
+    {% endif %}
+    healthcheck:
+      enabled: true
+    compression: "gzip"
+    out_of_order_action: "accept"
+  {% endif %}
+
+{% if DEBUG|default("0") == "1" %}
+  console:
+    type: "console"
+    inputs: ["transformed_file"]
+    target: "stdout"
+    encoding:
+      codec: "json"
+{% endif %}
