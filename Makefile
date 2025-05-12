@@ -1,7 +1,8 @@
 UV=uv
 UV_RUN=$(UV) run
-FIX=0
+FIX=1
 IMAGE=docker.io/library/file-to-loki-log-forwarder:latest
+HEALTH_PORT=8952
 
 bin/vector:
 	./install_vector.sh
@@ -39,7 +40,7 @@ debug-docker: ## Build and run the docker image in pure debug mode
 	rm -Rf debug_logs
 	mkdir debug_logs
 	$(MAKE) docker
-	docker run -v $(pwd)/debug_logs:/logs --rm -it -e IGNORE_NON_JSON_LINES=0 -e DEBUG=1 -e SINK_LOKI_LABELS=job=test,instance=test -e SOURCE_FILE_INCLUDE_PATHS=/logs/*.log $(IMAGE)
+	docker run -p $(HEALTH_PORT):$(HEALTH_PORT) -v $(pwd)/debug_logs:/logs --rm -it -e STLOG_LEVEL=DEBUG -e IGNORE_NON_JSON_LINES=0 -e DEBUG=1 -e SINK_LOKI_LABELS=job=test,instance=test -e SOURCE_FILE_INCLUDE_PATHS=/logs/*.log $(IMAGE)
 	rm -Rf debug_logs
 
 .PHONY: no-dirty
