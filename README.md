@@ -8,7 +8,7 @@ The image integrates a special vector configuration (and some signal handling sc
 (like CloudRun Jobs) as it guarantees that all logs are flushed to loki before the container is killed.
 
 > [!WARNING]  
-> Probably very specific to some of my needs.
+> Probably quite specific to my needs.
 
 ## How to use it?
 
@@ -37,6 +37,14 @@ The image integrates a special vector configuration (and some signal handling sc
 - `docker`
 - `make`
 - `uv` (https://docs.astral.sh/uv/getting-started/installation/)
+
+### Architecture
+
+This is simple docker wrapper around vector built with Python ([bin/main.py](bin/main.py)).
+
+The Vector [configuration file](conf/vector.yaml.jinja) is a Jinja2 template that is rendered at build time with the environment variables.
+
+Python stuff and dependencies are managed with [uv](https://docs.astral.sh/uv/getting-started/installation/).
 
 ### Makefile targets
 

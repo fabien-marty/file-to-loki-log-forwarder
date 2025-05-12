@@ -1,0 +1,34 @@
+name: ci
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - v*
+  pull_request:
+
+jobs:
+
+  lint_and_test:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+      - name: Run lint
+        run: |
+          make lint
+        env:
+          FIX: 0
+      - name: Run tests
+        run: |
+          make test
+      - name: Check modified files
+        run: |
+          make no-dirty
+      - name: Clean
+        run: |
+          make clean
+      - name: Check modified files (after clean)
+        run: |
+          make no-dirty
