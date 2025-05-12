@@ -1,7 +1,11 @@
+data_dir: "{{ DATA_DIR|default("/var/lib/vector") }}"
+
 acknowledgements:
   enabled: true
 
-data_dir: "{{ DATA_DIR|default("/var/lib/vector") }}"
+api:
+  enabled: true
+  address: "127.0.0.1:8686" # not exposed to the outside world
 
 sources:
   file:

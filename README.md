@@ -12,15 +12,26 @@ This is a public docker image to forward log lines read from files to loki (base
 The image integrates a special vector configuration (and some signal handling scripts) to be used in the context of ephemeral containers
 (like CloudRun Jobs) as it guarantees that all logs are flushed to loki before the container is killed.
 
+Moreover, it provides a special health check endpoint to avoid the container to be killed prematurely.
+
 > [!WARNING]  
 > Probably quite specific to my needs.
 
 ## How to use it?
 
+### Quickstart
+
+```
+rm -Rf mylogs
+mkdir -p mylogs
+docker run -it -v $(pwd)/mylogs:/logs -e SOURCE_FILE_INCLUDE_PATHS=/logs/foo.log -e SINK_LOKI_ENDPOINT=http://loki:3100/api/v1/push -e SINK_LOKI_LABELS=job=foo,env=dev docker.io/fabienmarty/file-to-loki-log-forwarder:latest
+echo "hello" >> mylogs/foo.log
+```
+
 ### Mandatory environment variables
 
 - `SOURCE_FILE_INCLUDE_PATHS`: comma separated list of paths to files to read (can include wildcards)
-- `SINK_LOKI_ENDPOINT`: the endpoint of the loki instance to send the logs to
+- `SINK_LOKI_ENDPOINT`: the endpoint of the loki instance to send the logs to (note: you can omit it when using `DEBUG=1`)
 - `SINK_LOKI_LABELS`: a comma separated list of labels (format: `key=value`) to add to the logs
 
 ### Optional environment variables
@@ -33,9 +44,10 @@ The image integrates a special vector configuration (and some signal handling sc
 - `SINK_LOKI_AUTH_PASSWORD`: the password to use when sending the logs to loki
 - `STLOG_LEVEL`: the log level to use (default: `INFO`) (not for `vector` itself but for the wrapper script used to run it)
 - `STLOG_OUTPUT`: `console` (default, for a human formatting of logs) or `json` or `json-gcp` (for structured logging)
-- `DEBUG`: if set to `1`, we enable debug mode (don't use it in production!)
+- `HEALTH_PORT`: health API port to bind to (default: `8952`)
+- `DEBUG`: if set to `1`, we enable debug mode (don't use it in production!), it will activate some additional logs, config dump (including passwords!) and a console sink to debug log events
 
-## Hacking
+## DEV notes
 
 ### Prerequisites
 
@@ -45,11 +57,9 @@ The image integrates a special vector configuration (and some signal handling sc
 
 ### Architecture
 
-This is simple docker wrapper around vector built with Python ([bin/main.py](bin/main.py)).
-
-The Vector [configuration file](conf/vector.yaml.jinja) is a Jinja2 template that is rendered at build time with the environment variables.
-
-Python stuff and dependencies are managed with [uv](https://docs.astral.sh/uv/getting-started/installation/).
+- This is simple docker wrapper around vector built with Python ([bin/main.py](bin/main.py)).
+- The Vector [configuration file](conf/vector.yaml.jinja) is a Jinja2 template that is rendered at build time with the environment variables.
+- Python stuff and dependencies are managed with [uv](https://docs.astral.sh/uv/getting-started/installation/).
 
 ### Makefile targets
 
