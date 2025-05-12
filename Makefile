@@ -44,7 +44,14 @@ debug-docker: ## Build and run the docker image in pure debug mode
 
 .PHONY: no-dirty
 no-dirty: ## Check that the repository is clean
-	task misc:no-dirty
+	if test -n "$$(git status --porcelain)"; then \
+		echo "***** git status *****"; \
+		git status; \
+		echo "***** git diff *****"; \
+		git diff; \
+		echo "ERROR: the repository is dirty"; \
+		exit 1; \
+	fi
 
 .PHONY: help
 help:
