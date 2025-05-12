@@ -1,0 +1,32 @@
+pull_request_rules:
+
+  - name: Automatic merge
+    conditions:
+      - "-label=Merge: Manual"
+      - "label~=^Type:"
+    actions:
+      queue:
+
+  - name: Delete branches 24 hours post-merge
+    conditions:
+      - merged-at < 1 day ago
+    actions:
+      delete_head_branch:
+
+
+queue_rules:
+
+  - name: default
+    merge_method: squash
+    commit_message_template: '{{ title }}'
+    queue_conditions:
+      - or:
+        - check-success = lint_and_test
+        - "-files~=^(?!CHANGELOG\\.md$).*$"
+      - "-draft"
+      - "-closed"
+      - "-conflict"
+      - "label~=^Type:.*"
+      - or:
+          - "author=fabien-marty"
+          - "#approved-reviews-by >= 1"
