@@ -20,6 +20,12 @@ from stlog.formatter import JsonFormatter, DEFAULT_STLOG_GCP_JSON_FORMAT
 
 MANAGEMENT_API_PORT = int(os.environ.get("MANAGEMENT_API_PORT", "8952"))
 LOGGER = stlog.getLogger("file-to-loki-log-forwarder")
+ROTATING_FILE_OUTPUT = RotatingFileOutput(
+    filename="/internal_logs/file-to-loki-log-forwarder.log",
+    formatter=JsonFormatter(fmt=DEFAULT_STLOG_GCP_JSON_FORMAT),
+    max_bytes=10 * 1024 * 1024,
+    backup_count=3,
+)
 
 
 @dataclass
@@ -56,13 +62,20 @@ class VectorManager:
     def launch_and_wait(self, config: str):
         self.__state = "STARTING"
         self.__vector_process = subprocess.Popen(
-            ["bin/vector", "--config-yaml", config]
+            ["bin/vector", "--config-yaml", config],
+            stdin=subprocess.DEVNULL,
+            start_new_session=True,
         )
         while True:
             time.sleep(1)
             with self.__lock:
                 if self.__state == "UP" and self.__stop_requested:
                     try:
+                        LOGGER.info("Waiting 1s before sending SIGTERM to vector...")
+                        ROTATING_FILE_OUTPUT._handler.flush()  # Let's flush this latest message (after that we have not guarantee that vector will see the next ones)
+                        time.sleep(
+                            1
+                        )  # Wait 1s to be sure that vector saw the latest items in sources
                         self.__vector_process.terminate()  # send SIGTERM
                         self.__state = "STOPPING"
                         LOGGER.info("SIGTERM sent to vector")
@@ -192,6 +205,7 @@ class HealthHTTPRequestHandler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(b"Not found")
             return
+        LOGGER.info("Received stop request")
         VECTOR_MANAGER.request_stop()
         if self.path == "/stop_and_wait":
             before = time.perf_counter()
@@ -240,14 +254,7 @@ def main():
 
 if __name__ == "__main__":
     stlog_outputs = _make_default_outputs()
-    stlog_outputs.append(
-        RotatingFileOutput(
-            filename="/internal_logs/file-to-loki-log-forwarder.log",
-            formatter=JsonFormatter(fmt=DEFAULT_STLOG_GCP_JSON_FORMAT),
-            max_bytes=10 * 1024 * 1024,
-            backup_count=3,
-        )
-    )
+    stlog_outputs.append(ROTATING_FILE_OUTPUT)
     stlog.setup(
         outputs=stlog_outputs, extra_levels={"httpx": "WARNING", "httpcore": "INFO"}
     )
