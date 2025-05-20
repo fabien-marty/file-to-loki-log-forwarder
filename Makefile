@@ -40,7 +40,7 @@ debug-docker: ## Build and run the docker image in pure debug mode
 	rm -Rf debug_logs
 	mkdir debug_logs
 	$(MAKE) docker
-	docker run -it -p $(MANAGEMENT_API_PORT):$(MANAGEMENT_API_PORT) -v $$(pwd)/debug_logs:/logs --rm -it -e CODEC=text -e INCLUDE_VECTOR_LOGS=0 -e INCLUDE_INTERNAL_LOGS=0 -e STLOG_LEVEL=DEBUG -e IGNORE_NON_JSON_LINES=0 -e DEBUG=1 -e SINK_LOKI_LABELS=job=test,instance=test -e SOURCE_FILE_INCLUDE_PATHS=/logs/*.log $(IMAGE)
+	docker run -it -p $(MANAGEMENT_API_PORT):$(MANAGEMENT_API_PORT) -v $$(pwd)/debug_logs:/logs --rm -it -e CODEC=text -e INCLUDE_VECTOR_LOGS=1 -e INCLUDE_INTERNAL_LOGS=1 -e STLOG_LEVEL=DEBUG -e IGNORE_NON_JSON_LINES=0 -e DEBUG=1 -e SINK_LOKI_LABELS=job=test,instance=test -e SOURCE_FILE_INCLUDE_PATHS=/logs/*.log $(IMAGE)
 	rm -Rf debug_logs
 
 .PHONY: no-dirty

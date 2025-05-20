@@ -19,6 +19,7 @@ from stlog.output import RotatingFileOutput
 from stlog.formatter import JsonFormatter, DEFAULT_STLOG_GCP_JSON_FORMAT
 
 MANAGEMENT_API_PORT = int(os.environ.get("MANAGEMENT_API_PORT", "8952"))
+DEBUG: bool = os.environ.get("DEBUG", "0") == "1"
 LOGGER = stlog.getLogger("file-to-loki-log-forwarder")
 ROTATING_FILE_OUTPUT = RotatingFileOutput(
     filename="/internal_logs/file-to-loki-log-forwarder.log",
@@ -62,9 +63,14 @@ class VectorManager:
 
     def launch_and_wait(self, config: str):
         self.__state = "STARTING"
+        stdout = subprocess.DEVNULL if not DEBUG else None
+        stderr = subprocess.DEVNULL if not DEBUG else None
+        verbosity = "--quiet" if not DEBUG else "--verbose"
         self.__vector_process = subprocess.Popen(
-            ["bin/vector", "--config-yaml", config],
+            ["bin/vector", verbosity, "--config-yaml", config],
             stdin=subprocess.DEVNULL,
+            stdout=stdout,
+            stderr=stderr,
             start_new_session=True,
         )
         while True:
