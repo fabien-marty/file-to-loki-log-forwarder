@@ -25,6 +25,7 @@ ROTATING_FILE_OUTPUT = RotatingFileOutput(
     formatter=JsonFormatter(fmt=DEFAULT_STLOG_GCP_JSON_FORMAT),
     max_bytes=10 * 1024 * 1024,
     backup_count=3,
+    delay=True,
 )
 
 
