@@ -78,10 +78,10 @@ class VectorManager:
             with self.__lock:
                 if self.__state == "UP" and self.__stop_requested:
                     try:
-                        LOGGER.info("Waiting 1s before sending SIGTERM to vector...")
+                        LOGGER.info("Waiting 2s before sending SIGTERM to vector...")
                         ROTATING_FILE_OUTPUT._handler.flush()  # Let's flush this latest message (after that we have not guarantee that vector will see the next ones)
                         time.sleep(
-                            1
+                            2
                         )  # Wait 1s to be sure that vector saw the latest items in sources
                         self.__vector_process.terminate()  # send SIGTERM
                         self.__state = "STOPPING"

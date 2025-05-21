@@ -10,7 +10,7 @@
 This is a public docker image to forward log lines read from files to loki (based on  [Vector](https://vector.dev/)).
 
 The image integrates a special vector configuration (and some signal handling scripts) to be used in the context of ephemeral containers
-(like CloudRun Jobs) as it guarantees that all logs are flushed to loki before the container is killed.
+(like CloudRun Services/Jobs) as it guarantees that all logs are flushed to loki before the container is killed.
 
 Moreover, it provides a special management and health check endpoint to avoid the container to be killed prematurely or to control the shutdown sequence manually.
 
@@ -120,6 +120,31 @@ exit "${CODE}"
 > [!WARNING]
 > In production, to activate the log forwarder graceful shutdown, you have to set the `LOG_FORWARDER_ENABLED` environment variable to `1` (in your main container config).
 
+### How to configure `stlog` with Google Cloud Platform (GCP)?
+
+If you use the [stlog](https://github.com/fabien-marty/stlog) library, you can configure like that:
+
+```python
+from stlog.setup import _make_default_outputs
+from stlog.output import RotatingFileOutput
+from stlog.formatter import JsonFormatter, DEFAULT_STLOG_GCP_JSON_FORMAT
+
+stlog_outputs = _make_default_outputs()
+if os.environ.get("LOG_FORWARDER_ENABLED", "0") == "1":
+    stlog_outputs.append(RotatingFileOutput(
+        filename="/logs/stlog.log",
+        formatter=JsonFormatter(fmt=DEFAULT_STLOG_GCP_JSON_FORMAT),
+        max_bytes=10 * 1024 * 1024,
+        backup_count=3,
+        delay=True,
+    ))
+stlog.setup(
+    outputs=stlog_outputs
+)
+```
+
+Don't forget to set `LOG_FORWARDER_ENABLED=1` and `STLOG_OUTPUT=json-gcp` in your main container configuration (only in GCP environment of course).
+
 ## Reference
 
 ### Mandatory environment variables
@@ -160,9 +185,19 @@ The HTTP (not HTTPS!) management API available on the `${MANAGEMENT_API_PORT}` (
 - `make`
 - `uv` (https://docs.astral.sh/uv/getting-started/installation/)
 
+### Play locally
+
+```
+docker run -d --name=loki --network host grafana/loki
+docker run -d --name=grafana --network host grafana/grafana
+make debug-docker
+```
+
+Open a browser on `http://localhost:3000` (`admin/admin` by default), add a loki connection to `http://localhost:3100` and you should be able to see the logs in the loki web interface.
+
 ### Architecture
 
-- This is simple docker wrapper around vector built with Python ([bin/main.py](bin/main.py)).
+- This is "simple" docker wrapper around vector built with Python ([bin/main.py](bin/main.py)).
 - The Vector [configuration file](conf/vector.yaml.jinja) is a Jinja2 template that is rendered at build time with the environment variables.
 - Python stuff and dependencies are managed with [uv](https://docs.astral.sh/uv/getting-started/installation/).
 
