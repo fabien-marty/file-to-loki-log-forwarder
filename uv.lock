@@ -57,7 +57,7 @@ dev = [
 requires-dist = [
     { name = "httpx" },
     { name = "jinja2" },
-    { name = "stlog" },
+    { name = "stlog", specifier = "==0.4.6" },
 ]
 
 [package.metadata.requires-dev]
@@ -268,11 +268,11 @@ wheels = [
 
 [[package]]
 name = "stlog"
-version = "0.4.3"
+version = "0.4.6"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/a9/15/5777c1b2c12d1d61c4f2529a818011e87495c88ab3acd1bae93833ce7017/stlog-0.4.3.tar.gz", hash = "sha256:ce9149f2fd97226bf8ce232af8212e27212428044ef865aec7ace0de1864c095", size = 18373 }
+sdist = { url = "https://files.pythonhosted.org/packages/4c/19/a4d3a033a82f6c5150b50176118c8e0eab271bfd008069e07d0ad6808a85/stlog-0.4.6.tar.gz", hash = "sha256:eb0d25cb9abf79555447006624dcf040d37e1e17cb1dff92c595bce7b7554430", size = 18590 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/08/c0/5ba347aa2b633f9bba28c48fbddd24b893267cd38bb819807ba0dcb15592/stlog-0.4.3-py3-none-any.whl", hash = "sha256:4a26e6e88937b6d54cfed684dc567d92e37a18cb3d2fa2abb8cd45e98c5ebddb", size = 22448 },
+    { url = "https://files.pythonhosted.org/packages/0c/bf/e68ef42d895bba8f668c5f4b79b3370d5f04f584aece2ec8aae9cb757d0b/stlog-0.4.6-py3-none-any.whl", hash = "sha256:eebe671587fd712322069a938cc39a4ca19e7f30522d5b013b0541274c27c8b2", size = 22685 },
 ]
 
 [[package]]
