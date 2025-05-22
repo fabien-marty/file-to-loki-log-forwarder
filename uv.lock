@@ -57,7 +57,7 @@ dev = [
 requires-dist = [
     { name = "httpx" },
     { name = "jinja2" },
-    { name = "stlog", specifier = "==0.4.6" },
+    { name = "stlog" },
 ]
 
 [package.metadata.requires-dev]
