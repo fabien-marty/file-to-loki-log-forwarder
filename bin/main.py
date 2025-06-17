@@ -28,6 +28,7 @@ ROTATING_FILE_OUTPUT = RotatingFileOutput(
     backup_count=3,
     delay=True,
 )
+DONT_EXIT = os.environ.get("DONT_EXIT", "0") == "1"
 
 
 @dataclass
@@ -256,7 +257,13 @@ def main():
     LOGGER.info("Stopping health webserver...")
     health_httpd.shutdown()
     launch_thread.join()
-    LOGGER.info("File-to-loki-log-forwarder stopped")
+    if DONT_EXIT:
+        LOGGER.info(
+            "File-to-loki-log-forwarder stopped (but let's keep the container running for 20s to circumvent a Cloud Run Job issue"
+        )
+        time.sleep(20)
+    else:
+        LOGGER.info("File-to-loki-log-forwarder stopped")
 
 
 if __name__ == "__main__":

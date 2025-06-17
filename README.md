@@ -107,6 +107,7 @@ if [ "${LOG_FORWARDER_ENABLED}" = "1" ]; then
     stop_log_forwarded_and_wait
 fi
 
+echo "Exiting with the status code: ${CODE}..."
 exit "${CODE}"
 ```
 
@@ -155,6 +156,7 @@ Don't forget to set `LOG_FORWARDER_ENABLED=1` and `STLOG_OUTPUT=json-gcp` in you
 
 ### Optional environment variables
 
+- `DONT_EXIT`: set this to `1` for Cloud Run Jobs or Cloud Batch (as the shutdown sequence is very special), set this to `0` (default) for Cloud Run Services
 - `USE_JSON_FIELD_AS_TIMESTAMP`: if set, we consider that the logs are in JSON format and we use the value of this field as timestamp (must be a valid ISO 8601 timestamp) (only if `CODEC=json`)
 - `IGNORE_NON_JSON_LINES`: if set to `1`, we silentyly ignore lines that are not valid JSON (only if `CODEC=json`)
 - `SINK_LOKI_TENANT_ID`: the tenant id to use when sending the logs to loki
