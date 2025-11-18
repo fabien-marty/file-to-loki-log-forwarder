@@ -27,7 +27,7 @@ jobs:
     timeout-minutes: 60
     steps:
       - name: Check out repository code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
       - uses: renovatebot/github-action@f5c3383cb7cbf7711d8b66b809375b2d5f4e2d1d # v42.0.2
         env:
           RENOVATE_REPOSITORIES: "${{ github.repository }}"
